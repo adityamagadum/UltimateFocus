@@ -1,0 +1,44 @@
+# ---------------------------------------------------------------- Android / Gradle
+.gradle/
+.kotlin/
+build/
+/captures
+.externalNativeBuild
+.cxx
+*.iml
+
+# Machine-specific paths (Android SDK location)
+local.properties
+
+# ---------------------------------------------------------------- IDE
+.idea/
+*.ipr
+*.iws
+.vscode/
+
+# ---------------------------------------------------------------- Secrets — never commit
+# Signing keys: anyone with these can publish updates as you.
+*.jks
+*.keystore
+keystore.properties
+.env
+.env.*
+google-services.json
+
+# ---------------------------------------------------------------- Build outputs
+# APKs and bundles go in GitHub Releases, not in the repo.
+*.apk
+*.aab
+*.ap_
+*.dex
+/release/
+app/release/
+output-metadata.json
+
+# ---------------------------------------------------------------- Misc
+*.log
+*.hprof
+*.zip
+*.pptx
+.DS_Store
+Thumbs.db

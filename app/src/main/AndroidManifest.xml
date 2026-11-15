@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!--
+        Android 11+ hides other installed packages by default. FocusGuard needs to list
+        launchable apps so the user can pick any app on their phone to block. This
+        declaration is scoped to launcher activities only, rather than requesting the
+        broad QUERY_ALL_PACKAGES permission.
+    -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+    </queries>
+    <uses-permission android:name="android.permission.VIBRATE" />
+
+    <!-- Payment Pause reminds the user to switch the shield back on after paying. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <application
+        android:name=".FocusGuardApplication"
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.MyApplication">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:theme="@style/Theme.MyApplication">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!--
+            Hosts the existing intervention UI over other apps. Excluded from recents and
+            given its own task affinity so it never merges with the main app task.
+        -->
+        <activity
+            android:name=".ui.intervention.InterventionActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:launchMode="singleTask"
+            android:taskAffinity=".intervention"
+            android:theme="@style/Theme.MyApplication" />
+
+        <!--
+            Must be exported so the system can bind it, and must point at the
+            accessibility-service meta-data or it will not appear in Android Settings.
+        -->
+        <service
+            android:name=".service.FocusAccessibilityService"
+            android:label="@string/app_name"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/accessibility_service_config" />
+        </service>
+
+        <!--
+            Payment Pause tile in Quick Settings: pauses the shield for a payment app,
+            or opens its switch to turn it back on.
+        -->
+        <service
+            android:name=".service.PaymentPauseTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_stat_shield"
+            android:label="Payment Pause"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.service.quicksettings.TOGGLEABLE_TILE"
+                android:value="true" />
+        </service>
+
+        <!-- Pause/Resume and End buttons on the session notification. -->
+        <receiver
+            android:name=".service.SessionActionReceiver"
+            android:exported="false" />
+    </application>
+
+</manifest>

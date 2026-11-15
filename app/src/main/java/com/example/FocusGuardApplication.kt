@@ -1,0 +1,94 @@
+package com.example
+
+import android.app.Application
+import android.content.Context
+import com.example.data.local.FocusGuardPreferences
+import com.example.data.repository.FocusGuardRepository
+import com.example.data.repository.InstalledAppsProvider
+import com.example.service.BlockSuppressor
+import com.example.service.ScreenLearner
+import com.example.service.BlockingEngine
+import com.example.service.DefaultBlockingEngine
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import com.example.ui.pause.PauseFonts
+import com.example.service.SessionNotifier
+
+/**
+ * Manual dependency container.
+ *
+ * FocusGuard needs exactly one [FocusGuardRepository] per process: the UI and the
+ * accessibility service must observe and mutate the same state. Constructing the
+ * repository from a ViewModel default argument (as before) produced a fresh instance
+ * per ViewModel, which made shared state impossible. Holding it here scopes it to the
+ * process instead.
+ *
+ * Hilt would be the usual answer, but it is not on the classpath and adding it would
+ * mean a Gradle change; a hand-rolled container is enough for this dependency graph.
+ */
+class AppContainer(context: Context) {
+
+    /**
+     * Application-lifetime scope. SupervisorJob so one failed write cannot tear down
+     * the timer loop or the persistence collectors.
+     */
+    val applicationScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+    val preferences: FocusGuardPreferences = FocusGuardPreferences(context)
+
+    val repository: FocusGuardRepository = FocusGuardRepository(
+        preferences = preferences,
+        scope = applicationScope
+    )
+
+    /**
+     * Shared between the accessibility service and the intervention screen so the
+     * grace period after a content block can start when the user actually returns.
+     */
+    val blockSuppressor: BlockSuppressor = BlockSuppressor()
+
+    /** Captures a screen signature when the user teaches FocusGuard a screen. */
+    val screenLearner: ScreenLearner = ScreenLearner()
+
+    /** Lists every launchable app on the device for the block picker. */
+    val installedAppsProvider: InstalledAppsProvider = InstalledAppsProvider(context.applicationContext)
+
+    /**
+     * Shared by the accessibility service. Reads the same repository the UI writes to,
+     * which is the whole reason this container exists.
+     */
+    val blockingEngine: BlockingEngine = DefaultBlockingEngine(
+        repository = repository,
+        ownPackageName = context.applicationContext.packageName
+    )
+}
+
+class FocusGuardApplication : Application() {
+
+    lateinit var container: AppContainer
+        private set
+
+    override fun onCreate() {
+        super.onCreate()
+        container = AppContainer(this)
+        instance = this
+        // Reads the pause-screen fonts once, in the background, so the pause screen
+        // never waits on disk the first time it appears.
+        container.applicationScope.launch(Dispatchers.IO) { PauseFonts.preload(this@FocusGuardApplication) }
+        // Keeps a running session's countdown in the notification shade.
+        SessionNotifier(this, container.repository, container.applicationScope).start()
+    }
+
+    companion object {
+        /**
+         * Set in [onCreate], which always runs before any Activity or Service in this
+         * process, so the accessibility service can reach the shared container.
+         */
+        @Volatile
+        private var instance: FocusGuardApplication? = null
+
+        fun container(): AppContainer? = instance?.container
+    }
+}

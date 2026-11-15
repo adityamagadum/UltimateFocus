@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!--
+        The window is painted in the app's own dark surface colour before Compose draws
+        anything. Without it, launching the app or the pause screen could flash the
+        phone's default (often white) background for a frame.
+    -->
+    <style name="Theme.MyApplication" parent="android:Theme.DeviceDefault.NoActionBar">
+        <item name="android:windowBackground">@color/focus_surface</item>
+        <item name="android:colorBackground">@color/focus_surface</item>
+    </style>
+</resources>

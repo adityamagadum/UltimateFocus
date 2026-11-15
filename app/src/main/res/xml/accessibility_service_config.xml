@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Configuration for FocusAccessibilityService.
+
+    Window-state events drive whole-app blocking. Content-changed events are needed
+    for Shorts / Reels detection, because moving into a short-form feed often does
+    not change the window. flagReportViewIds is required for the detectors to read
+    view id resource names, which is the strongest signal each platform gives us.
+
+    Windows-changed events and flagRetrieveInteractiveWindows let the service see
+    picture-in-picture windows: YouTube and others shrink a blocked Short into a
+    floating player when they are sent to the background, which the service closes.
+-->
+<accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:accessibilityEventTypes="typeWindowStateChanged|typeWindowContentChanged|typeWindowsChanged"
+    android:accessibilityFeedbackType="feedbackGeneric"
+    android:accessibilityFlags="flagDefault|flagIncludeNotImportantViews|flagReportViewIds|flagRetrieveInteractiveWindows"
+    android:canRetrieveWindowContent="true"
+    android:description="@string/accessibility_service_description"
+    android:notificationTimeout="100"
+    android:summary="@string/accessibility_service_summary" />
